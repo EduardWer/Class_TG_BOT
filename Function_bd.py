@@ -1,5 +1,6 @@
 import sqlite3
 import re
+
 class Database:
     def __init__(self, db_file):
         self.connection = sqlite3.connect(db_file)
@@ -22,24 +23,47 @@ class Database:
                 self.cursor.execute('INSERT INTO Content(CONTENT_ID) VALUES (?)',(user_id,))
 
 
-    def _extract_num_(self,string):
+    def __extract_num_(self,string):
         digits = re.findall(r'\d+', string)
         return ''.join(digits)
 
 
+
     def add_my_groups(self,Udata,user_id):
-        Udata = self._extract_num_(Udata)
+        Udata = Udata.split(',')
+
         with self.connection:
-            #data = self.cursor.execute('SELECT my_groum FROM Users WHERE user_id=?',(user_id,)).fetchone()
-            privileg = self.cursor.execute('SELECT privileg FROM Users WHERE user_id=?',(user_id,)).fetchone()
-            print(type(privileg[0]))
+
+            # data = self.cursor.execute('SELECT my_groum FROM Users WHERE user_id=?',(user_id,)).fetchone()
+            privileg = self.cursor.execute('UPDATE Users SET my_groum =? WHERE user_id =?', (user_id,)).fetchone()
+
             match privileg[0]:
                 case "start":
-                    self.cursor.execute('UPDATE Users SET my_groum=? WHERE user_id=?' ,(Udata,user_id,))
+                    self.cursor.execute('UPDATE Users SET my_groum =? WHERE user_id =?', (Udata[0], user_id,))
                 case "Middle":
-                    pass
-                case "Full":
-                    pass
+                    Udata = str(Udata)
+                    self.cursor.execute('UPDATE Users SET my_groum =? WHERE user_id =?', (Udata, user_id,))
+                case "Seniur":
+                    Udata = str(Udata)
+                    self.cursor.execute('UPDATE Users SET my_groum =? WHERE user_id =?', (Udata, user_id,))
+
+    def add_Pars_groups(self, Udata, user_id):
+        Udata = Udata.split(',')
+
+        with self.connection:
+
+                # data = self.cursor.execute('SELECT my_groum FROM Users WHERE user_id=?',(user_id,)).fetchone()
+                privileg = self.cursor.execute('SELECT privileg FROM Users WHERE user_id=?', (user_id,)).fetchone()
+
+                match privileg[0]:
+                    case "start":
+                        self.cursor.execute('UPDATE Content SET Group_id=? WHERE Content_id=?', (Udata[0], user_id,))
+                    case "Middle":
+                        Udata = str(Udata)
+                        self.cursor.execute('UPDATE Content SET Group_id=? WHERE Content_id=?', (Udata, user_id,))
+                    case "Seniur":
+                        Udata = str(Udata)
+                        self.cursor.execute('UPDATE Content SET Group_id=? WHERE Content_id=?', (Udata, user_id,))
 
 
 
@@ -48,4 +72,30 @@ class Database:
 
 
 
+    def send_query(self,data,query):
+        with self.connection:
+            data = self.cursor.execute(query,(data,))
+            if data == None:
+             data = eval(data.fetchall()[0][0])
+             return data
+            else:
+             return False
 
+
+    def send_defult_query(self,data,query):
+        with self.connection:
+            data = self.cursor.execute(query, (data,)).fetchone()
+            return data
+
+
+
+
+    def apdate_data(self,table,column,indef_column,data,user_id):
+        with self.connection:
+            self.cursor.execute(f'UPDATE {table} SET {column}=? WHERE {indef_column}=? ',(data,user_id,))
+
+
+
+# if __name__ == "__main__":
+#     db = Database(db_file='db.sqlite')
+#     print(db.send_defult_query(query='SELECT privileg FROM Users WHERE user_id=?',data=1365677446).fetchone())
