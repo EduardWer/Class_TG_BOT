@@ -1,9 +1,8 @@
 from aiogram import Bot, types, Dispatcher
 from aiogram.utils import executor
+
 import Function_bd
 import markup
-
-
 
 db = Function_bd.Database(db_file='db.sqlite')
 
@@ -13,7 +12,8 @@ dp = Dispatcher(bot)
 #***********************************************************************************************************************
 @dp.message_handler(commands=["start"])
 async def start_message(message:types.Message):
-    await bot.send_message(chat_id=message.chat.id,text="Здравствуйте, вас приветствует ваш персанальный помошник по контенту!"
+    await bot.send_message(chat_id=message.chat.id,
+                           text="Здравствуйте, вас приветствует ваш персанальный помощник по контенту!"
                                                         "Здесь вы можете настроить парсинг контента в свой канал "
                                                         "ручное отправление готовых постов\n"
                                                         "Так же доступны функции такие как:\n"
@@ -33,9 +33,11 @@ async  def add_function(message:types.Message):
     if message_[1] == '':
        await bot.send_message(message.chat.id,"Неверная команда")
     else:
+
         try:
-         db.add_my_groups(user_id=message.chat.id,Udata=message_[1])
-         await bot.send_message(chat_id=message.chat.id,text=f"Вы добавили группу {message_[1]}")
+            message_ = str(message_[1])
+            db.add_my_groups(user_id=message.chat.id, Udata=message_)
+            await bot.send_message(chat_id=message.chat.id,text=f"Вы добавили группу {message_[1]}")
         except:
             await bot.send_message(message.chat.id,"Вы ввели не допустимое значение!!")
 
@@ -44,8 +46,13 @@ async  def add_function(message:types.Message):
 async  def add_function(message:types.Message):
     message_ = message.text.split('/add_pars_groups')
     print(message_[1])
-    db.add_Pars_groups(message_[0],message.chat.id)
+    db.add_Pars_groups(message_[1], message.chat.id)
     await bot.send_message(chat_id=message.chat.id,text=f"Вы добавили группу {message_[1]}")
+
+
+@dp.message_handler(commands=["translate"])
+async def translate_message(message: types.Message):
+   await bot.send_message(message.chat.id, "Тут вы можете перевести пост")
 
 #*************************************************************************************************************************
 @dp.message_handler(commands=["send"])
@@ -53,7 +60,8 @@ async def send_messages(message:types.Message):
     user_id = message.chat.id
     if message.content_type == "text":
         text = message.text.split("/send")
-        value = db.send_query(query='SELECT my_groum FROM Users where user_id=?',data=user_id)
+        value = db.send_defult_query(query='SELECT my_groum FROM Users where user_id=?', data=user_id)
+
 
         if value != None:
 
@@ -67,19 +75,28 @@ async def send_messages(message:types.Message):
 async def send_photo(message:types.Message):
         photo = message.photo[-1].file_id if message.photo else None
         text = message.caption
-        value = db.send_query(query='SELECT my_groum FROM Users where user_id=?', data=message.chat.id)
-        if value != None:
+        db.apdate_data(table='Content', column="Foto_id", indef_column="Content_id", user_id=message.chat.id,
+                       data=message.photo[-1].file_id)
+        db.apdate_data(table='Content', column="caption", indef_column="Content_id", user_id=message.chat.id,
+                       data=text)
+        value = db.send_defult_query(query='SELECT my_groum FROM Users where user_id=?', data=message.chat.id)
+        try:
+         if value != None:
             for group in value:
                 await bot.send_photo(chat_id=group, caption=text,photo=photo)
             await bot.send_message(message.chat.id, text="Рассылка сделанна")
-        else:
+         else:
             await bot.send_message(chat_id=message.chat.id, text="Вы не добавили группы!!")
+        except:
+            await  bot.send_message(chat_id=message.chat.id, text="Вы не добавили группу")
 
 #**********************************************************************************************************************
 @dp.message_handler(content_types=types.ContentTypes.VIDEO)
 async def send_photo(message:types.Message):
         text = message.caption
-        value = db.send_query(query='SELECT my_groum FROM Users where user_id=?', data=message.chat.id)
+        db.apdate_data(table='Content', column="Video_id", indef_column="Content_id", user_id=message.chat.id,
+                       data=message.video.file_id)
+        value = db.send_defult_query(query='SELECT my_groum FROM Users where user_id=?', data=message.chat.id)
         if value != None:
             for group in value:
                 await bot.send_video(chat_id=group,video=message.video.file_id,caption=text)
@@ -103,7 +120,7 @@ async def all_message(message:types.Message):
                                                                 f"Ваш ID: {message.chat.id}")#Добавить список групп для рассылки
 
         case "Инструкция":
-            pass # Написать инструкцию для особо одарённых
+            await bot.send_message(message.chat.id, "C инструкцией мы можете ознакомиться в нашем Ютуб канале")
         case "Пользовательское соглашение":
             await bot.send_message(message.chat.id,"Внимательно ознакомтесь с условиями пользования")
             file_path  = 'sogloshenie/Пользовательское_соглашение_сервисов_PremSq.docx'
@@ -120,6 +137,12 @@ async def all_message(message:types.Message):
             db.apdate_data(table='Content', column='Group_id', indef_column='Content_id', data=None, user_id=message.chat.id)
         case "Назад":
             await bot.send_message(message.chat.id,'Хорошо!',reply_markup=markup.welcom_markup)
+        case _:
+            type_contert = message.content_type
+            match type_contert:
+                case "text":
+                    db.apdate_data(table='Content', column="Content_text", indef_column="Content_id",
+                                   user_id=message.chat.id, data=message.text)
 
 
 #***********************************************************************************************************************
