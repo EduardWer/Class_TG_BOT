@@ -21,7 +21,7 @@ async def start_message(message:types.Message):
                                                         " -перевод постов на другие языки\n"
                                                         " -отсылка готовых постов из бота в канал\n"
                                                         " -создание топов по статистике просмотра за день\n"
-                                                        " - ведение статистики канала + анализ контента\n")
+                                                        "Далее  - ведение статистики канала + анализ контента\n")
 
     await  bot.send_message(chat_id=message.chat.id, text="По всем вопросам можете обращаться @Eduard_wer", reply_markup=markup.welcom_markup)
     db.add_user(user_id=message.chat.id,user_name=message.chat.username)
